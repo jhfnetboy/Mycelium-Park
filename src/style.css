@@ -28,3 +28,63 @@ body {
   font-size: 14px;
   z-index: 100;
 }
+
+/* ── Info Bubble ── */
+.info-bubble {
+  position: relative;
+  pointer-events: none;
+  user-select: none;
+}
+
+.bubble-inner {
+  background: rgba(255, 255, 255, 0.95);
+  color: #222;
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-width: 140px;
+  max-width: 220px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  transform: translateX(-50%) translateY(-100%);
+  margin-bottom: 8px;
+}
+
+.bubble-type {
+  font-size: 18px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.bubble-inner strong {
+  display: block;
+  font-size: 14px;
+  color: #2d6a4f;
+  margin-bottom: 4px;
+}
+
+.bubble-inner p {
+  margin: 0;
+  color: #444;
+  font-size: 12px;
+}
+
+.bubble-inner small {
+  display: block;
+  margin-top: 4px;
+  color: #888;
+  font-size: 11px;
+}
+
+.bubble-arrow {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid rgba(255,255,255,0.95);
+  margin: 0 auto;
+  transform: translateX(-50%);
+  position: relative;
+  left: 50%;
+}
