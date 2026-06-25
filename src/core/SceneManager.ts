@@ -159,7 +159,8 @@ export class SceneManager {
 
                 this.bInited = true;
                 this.inputMgr.on("mousewheel", (value: any) => {
-                    if( !GVar.bCameraAnimState )
+                    // Shift+滚轮 = 高度微调（不拦截默认 zoom）
+                    if (value.shiftKey && !GVar.bCameraAnimState)
                         this.cameraController.updateHeight(value.deltaY * .05);
                 });
 

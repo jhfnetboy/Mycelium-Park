@@ -13,7 +13,7 @@ export class CameraController {
     private originalMinPolarAngle: number = 0;
     private originalMaxPolarAngle: number = Math.PI;
     private bPolarAdj: boolean = false;
-    private readonly tolerance: number = 0.005;
+
     protected vec3CamTarget: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
     protected bUseCC: boolean = false;
@@ -42,29 +42,24 @@ export class CameraController {
         // 创建轨道控制器
         if (this.bUseCC) {
             this.controls = new CameraControls(this.camera, container);
-            let pa: number = this.controls.polarAngle;
-            this.controls.minPolarAngle = pa;
-            this.controls.maxPolarAngle = pa;
+            this.controls.minPolarAngle = 0.08;
+            this.controls.maxPolarAngle = Math.PI * 0.46;
             this.bPolarAdj = false;
         }
         else {
             this.controls = new OrbitControls(this.camera, container);
             this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.05;
-            /**
-             * 平移效果可以让Camera的lookTarget不再是0,0,0点，而是一直处于变化中.
-             * 在SceneMoveController中的raycast函数将使用lookTarget来计算整体的移动方向。
-             */
             this.controls.enablePan = true;
-            // 禁用缩放（鼠标滚轮）鼠标滚轮的效果由自己实现
-            this.controls.enableZoom = false;
-            this.controls.screenSpacePanning = false; // 禁用屏幕空间平移
-
-            let pa: number = this.controls.getPolarAngle();
-            this.controls.minPolarAngle = pa;
-            this.controls.maxPolarAngle = pa;
+            this.controls.enableZoom = true;
+            this.controls.zoomSpeed = 1.2;
+            this.controls.minDistance = 30;
+            this.controls.maxDistance = 350;
+            this.controls.screenSpacePanning = false;
+            // 解锁垂直旋转：从俯视(5°)到接近水平(83°)
+            this.controls.minPolarAngle = 0.08;
+            this.controls.maxPolarAngle = Math.PI * 0.46;
             this.bPolarAdj = false;
-
         }
     }
 
@@ -150,14 +145,12 @@ export class CameraController {
     }
 
     public updateHeight(value: number): void {
-        this.targetHeight = this.targetHeight + value;
-        if (this.targetHeight < this.minHeight) {
-            this.targetHeight = this.minHeight;
-        }
-        if (this.targetHeight > this.maxHeight)
-            this.targetHeight = this.maxHeight;
-
-        this.unlockVerticalRotation();
+        // Height control now drives zoom distance via OrbitControls
+        const controls = this.controls as OrbitControls;
+        const dir = this.camera.position.clone().sub(controls.target).normalize();
+        const dist = this.camera.position.distanceTo(controls.target);
+        const newDist = Math.max(this.minHeight, Math.min(this.maxHeight * 2.5, dist + value));
+        this.camera.position.copy(controls.target.clone().add(dir.multiplyScalar(newDist)));
     }
 
     // 锁定垂直旋转
@@ -193,25 +186,11 @@ export class CameraController {
     }
 
     public update(): void {
-
         TWEEN.update();
-
-        // 允许垂直旋转：恢复默认角度范围
-        if (this.bPolarAdj) {
-            this.camera.position.y += .05 * (this.targetHeight - this.camera.position.y);
-            this.camera.lookAt((this.controls as OrbitControls).target);
-
-            let diff: number = this.camera.position.y - this.targetHeight;
-            if (Math.abs(diff) < this.tolerance) {
-                this.lockVerticalRotation();
-            }
-        }
-
         if (this.bUseCC)
             (this.controls as CameraControls).update(0.01);
         else
             (this.controls as OrbitControls).update();
-
     }
 
     /**
