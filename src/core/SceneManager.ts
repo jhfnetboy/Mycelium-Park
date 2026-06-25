@@ -15,6 +15,7 @@ import { EXRLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { MobileCar } from '../objects/MobileCar';
 import { InfoBubble } from '../ui/InfoBubble';
 import { InteractionManager } from '../ui/InteractionManager';
+import { spawnNatureCluster, spawnFountain, spawnBushRow } from '../objects/ParkBlock';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -176,6 +177,7 @@ export class SceneManager {
                     this.cameraController.camera, this.scene, container
                 );
                 this.spawnDemoInteractables();
+                this.spawnParkNature();
             });
 
         });
@@ -406,6 +408,17 @@ export class SceneManager {
                 this.cameraController.lookAtFront( this.followMobile as MobileCar );
             }
         });
+    }
+
+    /** 异步加载 Kenney 自然素材，散布树木/花朵/喷泉 */
+    private spawnParkNature(): void {
+        const center = new THREE.Vector3(0, 0, 0);
+        spawnNatureCluster(this.scene, center, {
+            trees: 10, flowers: 18, interaction: this.interactionMgr ?? undefined
+        });
+        spawnFountain(this.scene, new THREE.Vector3(0, 0, 0), this.interactionMgr ?? undefined);
+        spawnBushRow(this.scene, new THREE.Vector3(-40, 0, 20), 8, 6);
+        spawnBushRow(this.scene, new THREE.Vector3(-40, 0, -20), 8, 6);
     }
 
     /** 放置几个示范可交互对象（摩天轮占位 + 公园入口 + 咖啡厅） */
