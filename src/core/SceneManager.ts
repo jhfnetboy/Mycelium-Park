@@ -13,7 +13,8 @@ import { EventMgr } from '../utils/EventMgr';
 import { LightProbeLoader } from '../loader/LightProbeLoader';
 import { EXRLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { MobileCar } from '../objects/MobileCar';
-//import TWEEN from 'three/examples/jsm/libs/tween.module.js'
+import { InfoBubble } from '../ui/InfoBubble';
+import { InteractionManager } from '../ui/InteractionManager';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -50,6 +51,7 @@ export class SceneManager {
     //! 跟随物品:
     protected followMobile: MobileCar | null = null;
     protected lerpVal : number = 0.01;
+    protected interactionMgr: InteractionManager | null = null;
 
     constructor(container: HTMLElement) {
 
@@ -60,9 +62,10 @@ export class SceneManager {
 
         // 创建相机控制器
         this.cameraController = new CameraController(container);
-        container.addEventListener('contextmenu', function (e) {
-            e.preventDefault();
-        });
+        container.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+        // 初始化 InfoBubble (CSS2DRenderer)
+        InfoBubble.init(container);
 
         // 
         // 用简版环境光还是复杂版本的环境光:
@@ -159,15 +162,20 @@ export class SceneManager {
 
                 this.bInited = true;
                 this.inputMgr.on("mousewheel", (value: any) => {
-                    // Shift+滚轮 = 高度微调（不拦截默认 zoom）
                     if (value.shiftKey && !GVar.bCameraAnimState)
                         this.cameraController.updateHeight(value.deltaY * .05);
                 });
 
-                // 处理点击效果：
+                // 处理点击效果（原有车辆点击保留）：
                 this.inputMgr.on("startdrag", (evt: any) => {
                     this.onMousePickCar(evt);
                 });
+
+                // 初始化点击交互系统
+                this.interactionMgr = new InteractionManager(
+                    this.cameraController.camera, this.scene, container
+                );
+                this.spawnDemoInteractables();
             });
 
         });
@@ -382,6 +390,8 @@ export class SceneManager {
 
         // 渲染场景
         this.renderer.render(this.scene, this.cameraController.camera);
+        // CSS2D 气泡叠加渲染
+        InfoBubble.getins().update(this.scene, this.cameraController.camera);
     }
 
     private onWindowResize(container: HTMLElement): void {
@@ -395,6 +405,68 @@ export class SceneManager {
             if (event.key === 'z') {
                 this.cameraController.lookAtFront( this.followMobile as MobileCar );
             }
+        });
+    }
+
+    /** 放置几个示范可交互对象（摩天轮占位 + 公园入口 + 咖啡厅） */
+    private spawnDemoInteractables(): void {
+        // 摩天轮（大转圈占位 geometry，后续换 gltf）
+        const wheelGroup = new THREE.Group();
+        wheelGroup.name = 'ferris-wheel';
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(12, 0.8, 8, 24),
+            new THREE.MeshStandardMaterial({ color: 0xe63946 })
+        );
+        const hub = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.2, 1.2, 1, 12),
+            new THREE.MeshStandardMaterial({ color: 0xf4a261 })
+        );
+        wheelGroup.add(ring, hub);
+        wheelGroup.position.set(30, 14, 0);
+        this.scene.add(wheelGroup);
+
+        // 摩天轮每帧旋转
+        this.objects.push({
+            mesh: wheelGroup,
+            update: (dt: number) => { ring.rotation.z += dt * 0.4; }
+        } as any);
+
+        // 注册交互
+        this.interactionMgr!.register(wheelGroup, {
+            id: 'ferris-wheel',
+            name: '摩天轮',
+            description: '高 28m，可俯瞰整个公园。',
+            type: 'ride',
+            detail: '开放时间 9:00–21:00',
+        });
+
+        // 公园入口牌
+        const gate = new THREE.Mesh(
+            new THREE.BoxGeometry(6, 8, 1),
+            new THREE.MeshStandardMaterial({ color: 0x2d6a4f })
+        );
+        gate.position.set(-20, 4, 0);
+        this.scene.add(gate);
+        this.interactionMgr!.register(gate, {
+            id: 'park-entrance',
+            name: 'Mycelium Park 入口',
+            description: '欢迎来到菌丝公园！点击各设施了解更多。',
+            type: 'park',
+        });
+
+        // 咖啡厅占位
+        const cafe = new THREE.Mesh(
+            new THREE.BoxGeometry(8, 5, 8),
+            new THREE.MeshStandardMaterial({ color: 0xa8dadc })
+        );
+        cafe.position.set(0, 2.5, -30);
+        this.scene.add(cafe);
+        this.interactionMgr!.register(cafe, {
+            id: 'cafe-01',
+            name: '树荫咖啡厅',
+            description: '提供手冲咖啡、甜点和轻食。',
+            type: 'food',
+            detail: '营业时间 8:00–20:00',
         });
     }
 
