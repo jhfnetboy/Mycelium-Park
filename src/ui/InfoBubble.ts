@@ -37,17 +37,35 @@ export class InfoBubble {
   public show(target: THREE.Object3D, info: FacilityInfo): void {
     this.hide();
 
+    const inner = document.createElement('div');
+    inner.className = 'bubble-inner';
+
+    const icon = document.createElement('span');
+    icon.className = 'bubble-type';
+    icon.textContent = this.typeIcon(info.type);
+    inner.appendChild(icon);
+
+    const name = document.createElement('strong');
+    name.textContent = info.name;
+    inner.appendChild(name);
+
+    const desc = document.createElement('p');
+    desc.textContent = info.description;
+    inner.appendChild(desc);
+
+    if (info.detail) {
+      const detail = document.createElement('small');
+      detail.textContent = info.detail;
+      inner.appendChild(detail);
+    }
+
+    const arrow = document.createElement('div');
+    arrow.className = 'bubble-arrow';
+
     const div = document.createElement('div');
     div.className = 'info-bubble';
-    div.innerHTML = `
-      <div class="bubble-inner">
-        <span class="bubble-type">${this.typeIcon(info.type)}</span>
-        <strong>${info.name}</strong>
-        <p>${info.description}</p>
-        ${info.detail ? `<small>${info.detail}</small>` : ''}
-      </div>
-      <div class="bubble-arrow"></div>
-    `;
+    div.appendChild(inner);
+    div.appendChild(arrow);
 
     const label = new CSS2DObject(div);
     label.position.set(0, 8, 0);
