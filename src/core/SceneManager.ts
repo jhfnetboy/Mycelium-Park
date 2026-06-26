@@ -18,6 +18,7 @@ import { InteractionManager } from '../ui/InteractionManager';
 import { spawnNatureCluster, spawnFountain, spawnBushRow } from '../objects/ParkBlock';
 import { MiniTrain } from '../objects/MiniTrain';
 import { Lake } from '../objects/Lake';
+import { FerrisWheel } from '../objects/FerrisWheel';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -57,6 +58,7 @@ export class SceneManager {
     protected interactionMgr: InteractionManager | null = null;
     protected miniTrain: MiniTrain | null = null;
     protected lake: Lake | null = null;
+    protected ferrisWheel: FerrisWheel | null = null;
 
     constructor(container: HTMLElement) {
 
@@ -184,6 +186,11 @@ export class SceneManager {
                 this.spawnParkNature();
                 this.miniTrain = new MiniTrain(this.scene, this.interactionMgr ?? undefined);
                 this.lake = new Lake(this.scene, new THREE.Vector3(60, 0, 30), 28);
+                this.ferrisWheel = new FerrisWheel(
+                    this.scene,
+                    new THREE.Vector3(30, 0, 0),
+                    this.interactionMgr ?? undefined
+                );
             });
 
         });
@@ -396,9 +403,10 @@ export class SceneManager {
         this.cityChkTbl?.update({ delta: delta, elapsed: elapsed });
 
 
-        // 更新小火车 & 湖泊动画
+        // 更新小火车 & 湖泊 & 摩天轮
         this.miniTrain?.update(delta);
         this.lake?.update(delta);
+        this.ferrisWheel?.update(delta);
 
         // 渲染场景
         this.renderer.render(this.scene, this.cameraController.camera);
@@ -431,38 +439,8 @@ export class SceneManager {
         spawnBushRow(this.scene, new THREE.Vector3(-40, 0, -20), 8, 6);
     }
 
-    /** 放置几个示范可交互对象（摩天轮占位 + 公园入口 + 咖啡厅） */
+    /** 放置静态标志物：公园入口 + 咖啡厅（摩天轮已迁移到 FerrisWheel 类） */
     private spawnDemoInteractables(): void {
-        // 摩天轮（大转圈占位 geometry，后续换 gltf）
-        const wheelGroup = new THREE.Group();
-        wheelGroup.name = 'ferris-wheel';
-        const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(12, 0.8, 8, 24),
-            new THREE.MeshStandardMaterial({ color: 0xe63946 })
-        );
-        const hub = new THREE.Mesh(
-            new THREE.CylinderGeometry(1.2, 1.2, 1, 12),
-            new THREE.MeshStandardMaterial({ color: 0xf4a261 })
-        );
-        wheelGroup.add(ring, hub);
-        wheelGroup.position.set(30, 14, 0);
-        this.scene.add(wheelGroup);
-
-        // 摩天轮每帧旋转
-        this.objects.push({
-            mesh: wheelGroup,
-            update: (dt: number) => { ring.rotation.z += dt * 0.4; }
-        } as any);
-
-        // 注册交互
-        this.interactionMgr!.register(wheelGroup, {
-            id: 'ferris-wheel',
-            name: '摩天轮',
-            description: '高 28m，可俯瞰整个公园。',
-            type: 'ride',
-            detail: '开放时间 9:00–21:00',
-        });
-
         // 公园入口牌
         const gate = new THREE.Mesh(
             new THREE.BoxGeometry(6, 8, 1),
