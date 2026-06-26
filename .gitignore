@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Kenney raw downloads (zips + extracted dirs) — only curated GLBs in public/ are committed
+kenney-assets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
