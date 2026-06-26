@@ -17,7 +17,7 @@ export class BirdFlock {
   private swans: BirdState[] = [];
   private t = 0;
 
-  constructor(scene: THREE.Scene, center: THREE.Vector3) {
+  constructor(scene: THREE.Scene, center: THREE.Vector3, lakeCenter?: THREE.Vector3) {
     // Regular birds — 12 birds in a loose flock
     const bodyMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
     const wingMat = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide });
@@ -40,7 +40,7 @@ export class BirdFlock {
     // Swans — 4 large white birds, lower, near the lake
     const swanBodyMat = new THREE.MeshStandardMaterial({ color: 0xfafafa });
     const swanWingMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, side: THREE.DoubleSide });
-    const swanCenter = new THREE.Vector3(center.x + 60, center.y, center.z + 30);
+    const swanCenter = lakeCenter ?? new THREE.Vector3(center.x + 60, center.y, center.z + 30);
 
     for (let i = 0; i < 4; i++) {
       const state = this.makeBird(scene, swanCenter, swanBodyMat, swanWingMat, {

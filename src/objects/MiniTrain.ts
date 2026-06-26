@@ -33,10 +33,10 @@ export class MiniTrain {
   private t = 0;
   private ready = false;
 
-  constructor(scene: THREE.Scene, interaction?: InteractionManager) {
+  constructor(scene: THREE.Scene, interaction?: InteractionManager, rx = 55, rz = 40) {
     this.scene = scene;
     this.interaction = interaction;
-    this.curve = buildTrackPath();
+    this.curve = buildTrackPath(rx, rz);
     this.addTrackVisual();
     this.loadTrain();
   }
