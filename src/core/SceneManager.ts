@@ -19,6 +19,7 @@ import { spawnNatureCluster, spawnFountain, spawnBushRow } from '../objects/Park
 import { MiniTrain } from '../objects/MiniTrain';
 import { Lake } from '../objects/Lake';
 import { FerrisWheel } from '../objects/FerrisWheel';
+import { EditMode } from '../ui/EditMode';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -59,6 +60,7 @@ export class SceneManager {
     protected miniTrain: MiniTrain | null = null;
     protected lake: Lake | null = null;
     protected ferrisWheel: FerrisWheel | null = null;
+    protected editMode: EditMode | null = null;
 
     constructor(container: HTMLElement) {
 
@@ -191,6 +193,7 @@ export class SceneManager {
                     new THREE.Vector3(30, 0, 0),
                     this.interactionMgr ?? undefined
                 );
+                this.editMode = new EditMode(this.scene, this.cameraController.camera, container);
             });
 
         });
