@@ -20,6 +20,10 @@ import { MiniTrain } from '../objects/MiniTrain';
 import { Lake } from '../objects/Lake';
 import { FerrisWheel } from '../objects/FerrisWheel';
 import { EditMode } from '../ui/EditMode';
+import { Carousel } from '../objects/Carousel';
+import { HotAirBalloon } from '../objects/HotAirBalloon';
+import { BirdFlock } from '../objects/BirdFlock';
+import { Dock, BumperBoats } from '../objects/WaterActivities';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -61,6 +65,11 @@ export class SceneManager {
     protected lake: Lake | null = null;
     protected ferrisWheel: FerrisWheel | null = null;
     protected editMode: EditMode | null = null;
+    protected carousel: Carousel | null = null;
+    protected hotAirBalloon: HotAirBalloon | null = null;
+    protected birdFlock: BirdFlock | null = null;
+    protected dock: Dock | null = null;
+    protected bumperBoats: BumperBoats | null = null;
 
     constructor(container: HTMLElement) {
 
@@ -194,6 +203,7 @@ export class SceneManager {
                     this.interactionMgr ?? undefined
                 );
                 this.editMode = new EditMode(this.scene, this.cameraController.camera, container);
+                this.spawnActivities();
             });
 
         });
@@ -406,10 +416,15 @@ export class SceneManager {
         this.cityChkTbl?.update({ delta: delta, elapsed: elapsed });
 
 
-        // 更新小火车 & 湖泊 & 摩天轮
+        // 更新小火车 & 湖泊 & 摩天轮 & 活动设施
         this.miniTrain?.update(delta);
         this.lake?.update(delta);
         this.ferrisWheel?.update(delta);
+        this.carousel?.update(delta);
+        this.hotAirBalloon?.update(delta);
+        this.birdFlock?.update(delta);
+        this.dock?.update(delta);
+        this.bumperBoats?.update(delta);
 
         // 渲染场景
         this.renderer.render(this.scene, this.cameraController.camera);
@@ -440,6 +455,27 @@ export class SceneManager {
         spawnFountain(this.scene, new THREE.Vector3(0, 0, 0), this.interactionMgr ?? undefined);
         spawnBushRow(this.scene, new THREE.Vector3(-40, 0, 20), 8, 6);
         spawnBushRow(this.scene, new THREE.Vector3(-40, 0, -20), 8, 6);
+    }
+
+    /** 生成公园活动设施：旋转木马、热气球、鸟群、码头、碰碰船 */
+    private spawnActivities(): void {
+        const im = this.interactionMgr ?? undefined;
+        const lakeCenter = new THREE.Vector3(60, 0, 30);
+
+        // 旋转木马 — 公园东南角
+        this.carousel = new Carousel(this.scene, new THREE.Vector3(0, 0, 80), im);
+
+        // 热气球 — 公园正上方悬浮
+        this.hotAirBalloon = new HotAirBalloon(this.scene, new THREE.Vector3(20, 55, -20), im);
+
+        // 鸟群 + 天鹅（构造函数内创建，以湖中心为天鹅基点）
+        this.birdFlock = new BirdFlock(this.scene, new THREE.Vector3(0, 0, 0));
+
+        // 码头 — 湖南侧边缘
+        this.dock = new Dock(this.scene, new THREE.Vector3(lakeCenter.x, 0, lakeCenter.z + 30), im);
+
+        // 碰碰船 — 在湖中心区域巡逻
+        this.bumperBoats = new BumperBoats(this.scene, lakeCenter, 6, im);
     }
 
     /** 放置静态标志物：公园入口 + 咖啡厅（摩天轮已迁移到 FerrisWheel 类） */
