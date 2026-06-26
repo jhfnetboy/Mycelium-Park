@@ -17,6 +17,17 @@ function loadGlb(url: string): Promise<THREE.Group> {
   return new Promise((resolve, reject) => loader.load(url, g => resolve(g.scene), undefined, reject));
 }
 
+function disposeGroup(group: THREE.Group): void {
+  group.traverse(c => {
+    const m = c as THREE.Mesh;
+    if (!m.isMesh) return;
+    m.geometry?.dispose();
+    const mat = m.material;
+    if (Array.isArray(mat)) mat.forEach(x => x.dispose());
+    else (mat as THREE.Material)?.dispose();
+  });
+}
+
 export class EditMode {
   private scene: THREE.Scene;
   private camera: THREE.Camera;
@@ -29,6 +40,13 @@ export class EditMode {
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2(-9999, -9999);
   private toolbar: HTMLElement;
+  private loadId = 0;
+
+  // stored for dispose()
+  private onMoveH: (e: PointerEvent) => void;
+  private onClickH: (e: MouseEvent) => void;
+  private onContextH: (e: MouseEvent) => void;
+  private onKeyH: (e: KeyboardEvent) => void;
 
   constructor(scene: THREE.Scene, camera: THREE.Camera, container: HTMLElement) {
     this.scene = scene;
@@ -39,9 +57,27 @@ export class EditMode {
     document.body.appendChild(this.toolbar);
     this.toggleToolbar(false);
 
-    container.addEventListener('pointermove', e => this.onMove(e));
-    container.addEventListener('click', e => this.onClick(e));
-    window.addEventListener('keydown', e => { if (e.key === 'e' || e.key === 'E') this.toggle(); });
+    this.onMoveH = (e) => this.onMove(e);
+    this.onClickH = (e) => this.onClick(e);
+    this.onContextH = (e) => this.onContextMenu(e);
+    this.onKeyH = (e) => { if (e.key === 'e' || e.key === 'E') this.toggle(); };
+
+    container.addEventListener('pointermove', this.onMoveH);
+    container.addEventListener('click', this.onClickH);
+    container.addEventListener('contextmenu', this.onContextH);
+    window.addEventListener('keydown', this.onKeyH);
+  }
+
+  public dispose(): void {
+    this.container.removeEventListener('pointermove', this.onMoveH);
+    this.container.removeEventListener('click', this.onClickH);
+    this.container.removeEventListener('contextmenu', this.onContextH);
+    window.removeEventListener('keydown', this.onKeyH);
+    if (this.ghost) { disposeGroup(this.ghost); this.scene.remove(this.ghost); }
+    this.scene.remove(this.ground);
+    this.ground.geometry.dispose();
+    (this.ground.material as THREE.Material).dispose();
+    document.body.removeChild(this.toolbar);
   }
 
   private makeGround(): THREE.Mesh {
@@ -84,6 +120,7 @@ export class EditMode {
     this.toggleToolbar(this.active);
     this.container.style.cursor = this.active ? 'crosshair' : 'default';
     if (!this.active && this.ghost) {
+      disposeGroup(this.ghost);
       this.scene.remove(this.ghost);
       this.ghost = null;
     }
@@ -96,15 +133,16 @@ export class EditMode {
     this.selectedType = type;
     this.toolbar.querySelectorAll('.edit-btn').forEach(b => b.classList.remove('selected'));
     this.toolbar.querySelector(`[data-type="${type}"]`)?.classList.add('selected');
-    if (this.ghost) this.scene.remove(this.ghost);
-    this.ghost = null;
     this.loadGhost(type);
   }
 
   private async loadGhost(type: ParkItemType): Promise<void> {
+    const id = ++this.loadId;
     const { url, scale } = ITEM_CATALOG[type];
     try {
       const model = await loadGlb(url);
+      // stale load: a newer loadGhost was started while we awaited
+      if (id !== this.loadId) { disposeGroup(model); return; }
       model.scale.setScalar(scale);
       model.traverse(c => {
         const m = c as THREE.Mesh;
@@ -115,10 +153,10 @@ export class EditMode {
           m.material = mat;
         }
       });
-      if (this.ghost) this.scene.remove(this.ghost);
+      if (this.ghost) { disposeGroup(this.ghost); this.scene.remove(this.ghost); }
       this.ghost = model;
       this.scene.add(model);
-    } catch { /* skip */ }
+    } catch { /* skip on load error */ }
   }
 
   private hitGround(e: PointerEvent): THREE.Vector3 | null {
@@ -140,10 +178,16 @@ export class EditMode {
 
   private onClick(e: MouseEvent): void {
     if (!this.active) return;
-    if (e.button === 2) return; // right-click handled below
     const pt = this.hitGround(e as PointerEvent);
     if (!pt) return;
     this.placeItem(this.selectedType, pt);
+  }
+
+  private onContextMenu(e: MouseEvent): void {
+    e.preventDefault();
+    if (!this.active) return;
+    const pt = this.hitGround(e as PointerEvent);
+    if (pt) this.removeNearest(pt);
   }
 
   private async placeItem(type: ParkItemType, position: THREE.Vector3): Promise<void> {
@@ -166,6 +210,7 @@ export class EditMode {
       if (d < minDist) { minDist = d; nearest = obj; }
     }
     if (nearest && minDist < threshold) {
+      disposeGroup(nearest);
       this.scene.remove(nearest);
       this.placed.splice(this.placed.indexOf(nearest), 1);
     }
