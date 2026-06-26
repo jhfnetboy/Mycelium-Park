@@ -17,6 +17,7 @@ import { InfoBubble } from '../ui/InfoBubble';
 import { InteractionManager } from '../ui/InteractionManager';
 import { spawnNatureCluster, spawnFountain, spawnBushRow } from '../objects/ParkBlock';
 import { MiniTrain } from '../objects/MiniTrain';
+import { Lake } from '../objects/Lake';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -55,6 +56,7 @@ export class SceneManager {
     protected lerpVal : number = 0.01;
     protected interactionMgr: InteractionManager | null = null;
     protected miniTrain: MiniTrain | null = null;
+    protected lake: Lake | null = null;
 
     constructor(container: HTMLElement) {
 
@@ -181,6 +183,7 @@ export class SceneManager {
                 this.spawnDemoInteractables();
                 this.spawnParkNature();
                 this.miniTrain = new MiniTrain(this.scene, this.interactionMgr ?? undefined);
+                this.lake = new Lake(this.scene, new THREE.Vector3(60, 0, 30), 28);
             });
 
         });
@@ -393,8 +396,9 @@ export class SceneManager {
         this.cityChkTbl?.update({ delta: delta, elapsed: elapsed });
 
 
-        // 更新小火车
+        // 更新小火车 & 湖泊动画
         this.miniTrain?.update(delta);
+        this.lake?.update(delta);
 
         // 渲染场景
         this.renderer.render(this.scene, this.cameraController.camera);
