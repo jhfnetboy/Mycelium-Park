@@ -16,6 +16,7 @@ import { MobileCar } from '../objects/MobileCar';
 import { InfoBubble } from '../ui/InfoBubble';
 import { InteractionManager } from '../ui/InteractionManager';
 import { spawnNatureCluster, spawnFountain, spawnBushRow } from '../objects/ParkBlock';
+import { MiniTrain } from '../objects/MiniTrain';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -53,6 +54,7 @@ export class SceneManager {
     protected followMobile: MobileCar | null = null;
     protected lerpVal : number = 0.01;
     protected interactionMgr: InteractionManager | null = null;
+    protected miniTrain: MiniTrain | null = null;
 
     constructor(container: HTMLElement) {
 
@@ -178,6 +180,7 @@ export class SceneManager {
                 );
                 this.spawnDemoInteractables();
                 this.spawnParkNature();
+                this.miniTrain = new MiniTrain(this.scene, this.interactionMgr ?? undefined);
             });
 
         });
@@ -389,6 +392,9 @@ export class SceneManager {
         // CityTable内可移动元素更新：
         this.cityChkTbl?.update({ delta: delta, elapsed: elapsed });
 
+
+        // 更新小火车
+        this.miniTrain?.update(delta);
 
         // 渲染场景
         this.renderer.render(this.scene, this.cameraController.camera);
