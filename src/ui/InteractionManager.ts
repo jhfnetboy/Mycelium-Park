@@ -42,11 +42,7 @@ export class InteractionManager {
       const root: THREE.Object3D = hits[0].object.userData['pickableRoot'] ?? hits[0].object;
       const info: FacilityInfo = hits[0].object.userData['facilityInfo'];
       if (info) {
-        if (InfoBubble.getins().isVisible()) {
-          InfoBubble.getins().hide();
-        } else {
-          InfoBubble.getins().show(root, info);
-        }
+        InfoBubble.getins().show(root, info);
         return;
       }
     }
@@ -80,15 +76,17 @@ export class InteractionManager {
     obj.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (!mesh.isMesh) return;
+      if (on && !(mesh as any)._matCloned) {
+        mesh.material = (mesh.material as THREE.Material).clone();
+        (mesh as any)._matCloned = true;
+      }
       const mat = mesh.material as THREE.MeshStandardMaterial;
-      if (!mat) return;
+      if (!mat?.emissive) return;
       if (on) {
-        (mesh as any)._origEmissive = mat.emissive?.clone();
-        mat.emissive?.set(0x224422);
+        (mesh as any)._origEmissive = mat.emissive.clone();
+        mat.emissive.set(0x224422);
       } else {
-        if ((mesh as any)._origEmissive) {
-          mat.emissive?.copy((mesh as any)._origEmissive);
-        }
+        if ((mesh as any)._origEmissive) mat.emissive.copy((mesh as any)._origEmissive);
       }
     });
   }
